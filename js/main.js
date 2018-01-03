@@ -39,7 +39,7 @@ var GameState = {
 		}
 		
 
-		game.sound.mute = true;
+		//game.sound.mute = true;
 
 	},
 
@@ -53,12 +53,8 @@ var GameState = {
 			//paddle2.y = game.world.height-paddle1.y;
 
 			// initiate collisions
-			game.physics.arcade.collide(paddle1,ball,function(){
-				game.sound.play('hit')
-			});
-			game.physics.arcade.collide(paddle2,ball,function(){
-				game.sound.play('hit')
-			});
+			game.physics.arcade.collide(paddle1,ball);
+			game.physics.arcade.collide(paddle2,ball);
 
 
 			// collision logic
@@ -208,5 +204,19 @@ function restart(){
 	score1Text = game.add.bitmapText(10,10,'font',score1,64);
 	score2Text = game.add.bitmapText(game.width - 10,10,'font',score2,64);
 	score2Text.anchor.x =1;
+
+	paddle1.body.onCollide = new Phaser.Signal();
+    paddle1.body.onCollide.add(rebound, this);
+
+    paddle2.body.onCollide = new Phaser.Signal();
+    paddle2.body.onCollide.add(rebound, this);
 }
 
+
+function rebound(paddle){
+	//game.sound.play('hit');
+	
+	ball.body.velocity.x = ((paddle.x < ball.x) * 2 - 1) * Math.sqrt(2) * ballVelocity * Math.cos(Math.PI*(ball.y - paddle.y)/200);
+	ball.body.velocity.y = ballVelocity * Math.sin(Math.PI*(ball.y - paddle.y)/200);
+	
+}

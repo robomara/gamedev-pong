@@ -33,11 +33,10 @@ var GameState = {
 		ballVelocity = 500;
 		ballLaunched = false;
 
-		if (!gameStarted){
-			startText = game.add.bitmapText(game.world.centerX,game.world.centerY,'font',"Click to Start",64);
-			startText.anchor.setTo(0.5,0.5);
-		}
-		
+		startText = game.add.bitmapText(game.world.centerX,game.world.centerY,'font',"Click to Start",64);
+		startText.anchor.setTo(0.5,0.5);
+		game.input.onDown.addOnce(restart,this);
+
 
 		//game.sound.mute = true;
 
@@ -50,7 +49,6 @@ var GameState = {
 
 			// move paddles
 			controlPaddle(paddle1,game.input.y);
-			//paddle2.y = game.world.height-paddle1.y;
 
 			// initiate collisions
 			game.physics.arcade.collide(paddle1,ball);
@@ -60,28 +58,30 @@ var GameState = {
 			// collision logic
 			if (ball.body.blocked.left){
 				score2++;
+				moveBall();
 			}
 			else if (ball.body.blocked.right){
 				score1++;
+				moveBall();
 			}
 
+			// 'AI'
 			paddle2.body.velocity.setTo(ball.body.velocity.y);
 			paddle2.body.velocity.x = 0;
 			paddle2.body.maxVelocity.y = 200;
 
+			// score calculations
 			score1Text.text = score1;
 			score2Text.text = score2;
 
-
-			if(score2 == 7){
+			// test for win/fail condition
+			if(score2 == 3){
 				gameover();
 			}
-			else if(score1 == 7){
+			else if(score1 == 3){
 				win();
 			}
-		}
-		else if(!gameStarted){
-			game.input.onDown.addOnce(restart,this);
+
 		}
 	}
 };
@@ -114,48 +114,12 @@ function controlPaddle(paddle,y){
 	}	
 }
 
-function createBall(x,y){
-	var ball = game.add.sprite(x,y,'ball');
-	ball.anchor.setTo(0.5)
-	game.physics.arcade.enable(ball);
-	ball.body.collideWorldBounds = true;
-	ball.body.bounce.setTo(1,1);
-
-	return ball;
-}
-
-function moveBall(){
-	if(ballLaunched){
-		ball.x = game.world.centerX;
-		ball.y = game.world.centerY;
-		ball.body.velocity.setTo(0,0);
-		ballLaunched = false;
-
-		// should also reset paddle2
-		paddle2.y = game.world.centerY
-	}
-	else{
-		if(Math.random()>0.5){
-			ball.body.velocity.x = -ballVelocity;
-		}
-		else {
-			ball.body.velocity.x = ballVelocity;
-		}
-		if(Math.random()>0.5){
-			ball.body.velocity.y = -ballVelocity;
-		}
-		else {
-			ball.body.velocity.y = ballVelocity;
-		}
-		ballLaunched = true;
-	}
-
-}
 
 function gameover(){
 	paddle1.destroy();
 	paddle2.destroy();
-	ball.destroy();
+	ball.visible = false;
+
 
 	gameOverText = game.add.bitmapText(game.world.centerX,game.world.centerY,'font',"Game Over",64);
 	resetText = game.add.bitmapText(game.world.centerX,game.world.centerY+32,'font',"Click to Reset",32);
@@ -165,12 +129,13 @@ function gameover(){
 	gameStarted = false;
 	ballLaunched = false;
 
+	game.input.onDown.addOnce(restart,this);
 }
 
 function win(){
 	paddle1.destroy();
 	paddle2.destroy();
-	ball.destroy();
+	ball.visible = false;
 
 	winText = game.add.bitmapText(game.world.centerX,game.world.centerY,'font',"Win",64);
 	resetText = game.add.bitmapText(game.world.centerX,game.world.centerY+32,'font',"Click to Reset",32);
@@ -179,6 +144,8 @@ function win(){
 
 	gameStarted = false;
 	ballLaunched = false;
+
+	game.input.onDown.addOnce(restart,this);
 }
 
 function restart(){
@@ -196,7 +163,6 @@ function restart(){
 	// load ball
 	ball = createBall(game.world.centerX,game.world.centerY)
 	
-	moveBall();
 
 	score1 = "0";
 	score2 = "0";
@@ -215,8 +181,43 @@ function restart(){
 
 function rebound(paddle){
 	//game.sound.play('hit');
-	
+	ballVelocity += 100;
 	ball.body.velocity.x = ((paddle.x < ball.x) * 2 - 1) * Math.sqrt(2) * ballVelocity * Math.cos(Math.PI*(ball.y - paddle.y)/200);
 	ball.body.velocity.y = ballVelocity * Math.sin(Math.PI*(ball.y - paddle.y)/200);
-	
+}
+
+
+function launch(){
+
+	ballVelocity = 500;
+	direction = Math.random()/1.5 * Math.PI;
+
+	ball.body.velocity.x = ballVelocity * Math.sin(direction) * ((Math.random() < Math.random()) * 2 - 1);
+	ball.body.velocity.y = ballVelocity * Math.cos(direction) * ((Math.random() < Math.random()) * 2 - 1);
+	ballLaunched = true;
+}
+
+
+function moveBall(){
+	if(ballLaunched){
+		ball.x = game.world.centerX;
+		ball.y = game.world.centerY;
+		ball.body.velocity.setTo(0,0);
+		ballLaunched = false;
+		// should also reset paddle2
+		paddle2.y = game.world.centerY;
+	}
+
+	game.input.onDown.addOnce(launch,this);
+}
+
+
+function createBall(x,y){
+	var ball = game.add.sprite(x,y,'ball');
+	ball.anchor.setTo(0.5)
+	game.physics.arcade.enable(ball);
+	ball.body.collideWorldBounds = true;
+	ball.body.bounce.setTo(1,1);
+	game.input.onDown.addOnce(launch,this);
+	return ball;
 }
